@@ -5,6 +5,7 @@ app.use(express.json());
 const observacoesPorId = {};
 let contador = 0;
 
+//Criar uma nova observação
 app.post("/lembretes/:id/observacoes", (req, res) => {
     contador++;
     const { texto, concluido } = req.body;
@@ -17,6 +18,20 @@ app.post("/lembretes/:id/observacoes", (req, res) => {
     res.status(201).send(observacoesDoLembrete);
 });
 
+// Buscar as observações de todos os lembretes
+app.get("/observacoes", (req, res) => {
+    const allObservacoes = Object.values(observacoesPorId).reduce((acc, observacoes) => {
+        return acc.concat(observacoes);
+    }, []);
+
+    if (allObservacoes.length > 0) {
+        res.send(allObservacoes);
+    } else {
+        res.status(404).send('Nenhuma observação encontrada.');
+    }
+});
+
+//Buscar uma observação por ID
 app.get("/lembretes/:id/observacoes", (req, res) => {
     const lembreteId = req.params.id;
     const observacoesDoLembrete = observacoesPorId[lembreteId];
@@ -27,6 +42,7 @@ app.get("/lembretes/:id/observacoes", (req, res) => {
     }
 });
 
+//Atualizar uma observação por ID
 app.put("/lembretes/:id/observacoes/:obsId", (req, res) => {
     const lembreteId = req.params.id;
     const observacaoId = req.params.obsId;
@@ -48,7 +64,7 @@ app.put("/lembretes/:id/observacoes/:obsId", (req, res) => {
     }
 });
 
-// Rota para excluir uma observação associada a um lembrete
+// Excluir uma observação
 app.delete("/lembretes/:id/observacoes/:obsId", (req, res) => {
     const lembreteId = req.params.id;
     const observacaoId = req.params.obsId;
