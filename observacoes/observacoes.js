@@ -9,12 +9,11 @@ const axios = require('axios');
 app.post("/lembretes/:id/observacoes", async (req, res) => {
     const lembreteId = req.params.id;
     const { texto, concluido } = req.body;
-    const idObs = uuidv4(); // Gerar um ID único para a observação
+    const idObs = uuidv4();
     const data = new Date();
     console.log(req.body);
 
     try {
-        // Faça uma solicitação ao serviço de lembretes para obter o lembrete com o ID especificado
         const lembreteResponse = await axios.get(`http://localhost:4000/lembretes/${lembreteId}`);
         const lembrete = lembreteResponse.data;
 
@@ -29,7 +28,6 @@ app.post("/lembretes/:id/observacoes", async (req, res) => {
             lembrete.observacoes.push(observacao); 
             await axios.put(`http://localhost:4000/lembretes/${lembreteId}`, lembrete);
 
-            // Após concluir a operação, retorne a resposta
             res.status(201).send(observacao);
         } else {
             res.status(404).send('Lembrete não encontrado.');
