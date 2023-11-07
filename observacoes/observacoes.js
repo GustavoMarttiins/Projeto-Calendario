@@ -3,19 +3,40 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 app.use(express.json());
 const observacoesPorId = {};
-let contador = 0;
+const axios = require('axios');
 
 //Criar uma nova observação
-app.post("/lembretes/:id/observacoes", (req, res) => {
-    contador++;
+app.post("/lembretes/:id/observacoes", async (req, res) => {
+    const lembreteId = req.params.id;
     const { texto, concluido } = req.body;
-    const idObs = ++contador;
-    const observacoesDoLembrete = observacoesPorId[req.params.id] || [];
+    const idObs = uuidv4(); // Gerar um ID único para a observação
     const data = new Date();
-    observacoesDoLembrete.push({ id: idObs, texto, data: data.toISOString(), concluido: concluido || false });
+    console.log(req.body);
 
-    observacoesPorId[req.params.id] = observacoesDoLembrete;
-    res.status(201).send(observacoesDoLembrete);
+    try {
+        // Faça uma solicitação ao serviço de lembretes para obter o lembrete com o ID especificado
+        const lembreteResponse = await axios.get(`http://localhost:4000/lembretes/${lembreteId}`);
+        const lembrete = lembreteResponse.data;
+
+        if (lembrete) {
+            const observacao = {
+                id: idObs,
+                texto,
+                data: data.toISOString(),
+                concluido: concluido || false,
+            };
+
+            lembrete.observacoes.push(observacao); 
+            await axios.put(`http://localhost:4000/lembretes/${lembreteId}`, lembrete);
+
+            // Após concluir a operação, retorne a resposta
+            res.status(201).send(observacao);
+        } else {
+            res.status(404).send('Lembrete não encontrado.');
+        }
+    } catch (error) {
+        res.status(500).send('Erro ao obter informações do lembrete.');
+    }
 });
 
 // Buscar as observações de todos os lembretes
