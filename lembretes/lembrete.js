@@ -61,6 +61,12 @@ app.delete('/lembretes/:id', (req, res) => {
   }
 });
 
+app.post("/eventos", (req, res) => {
+  console.log(req.body);
+  res.status(200).send({ msg: "ok" });
+});
+
+
 app.listen(4000, () => {
   console.log('Lembretes. Porta 4000');
 });

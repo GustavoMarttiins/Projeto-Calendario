@@ -1,106 +1,86 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 const app = express();
 app.use(express.json());
-const observacoesPorId = {};
-const axios = require('axios');
 
-//Criar uma nova observação
-app.post("/lembretes/:id/observacoes", async (req, res) => {
-    const lembreteId = req.params.id;
-    const { texto, concluido } = req.body;
+const observacoesPorLembreteId = {};
+
+app.post('/lembretes/:id/observacoes', async (req, res) => {
     const idObs = uuidv4();
-    const data = new Date();
-    console.log(req.body);
+    const { texto, concluido } = req.body;
 
-    try {
-        const lembreteResponse = await axios.get(`http://localhost:4000/lembretes/${lembreteId}`);
-        const lembrete = lembreteResponse.data;
+    // Adicionar observação ao array
+    const observacoesDoLembrete = observacoesPorLembreteId[req.params.id] || [];
+    const observacao = { id: idObs, texto, concluido };
+    observacoesDoLembrete.push(observacao);
+    observacoesPorLembreteId[req.params.id] = observacoesDoLembrete;
 
-        if (lembrete) {
-            const observacao = {
-                id: idObs,
-                texto,
-                data: data.toISOString(),
-                concluido: concluido || false,
-            };
-
-            lembrete.observacoes.push(observacao); 
-            await axios.put(`http://localhost:4000/lembretes/${lembreteId}`, lembrete);
-
-            res.status(201).send(observacao);
-        } else {
-            res.status(404).send('Lembrete não encontrado.');
+    // Enviar evento após adicionar a observação ao array
+    await axios.post('http://localhost:10000/eventos', {
+        tipo: "ObservacaoCriada",
+        dados: {
+            id: idObs, texto, lembreteId: req.params.id
         }
-    } catch (error) {
-        res.status(500).send('Erro ao obter informações do lembrete.');
-    }
+    });
+
+    // Retornar apenas a observação criada
+    res.status(201).send(observacao);
 });
 
-// Buscar as observações de todos os lembretes
-app.get("/observacoes", (req, res) => {
-    const allObservacoes = Object.values(observacoesPorId).reduce((acc, observacoes) => {
-        return acc.concat(observacoes);
-    }, []);
-
-    if (allObservacoes.length > 0) {
-        res.send(allObservacoes);
-    } else {
-        res.status(404).send('Nenhuma observação encontrada.');
-    }
+app.get('/lembretes/:id/observacoes', (req, res) => {
+    res.send(observacoesPorLembreteId[req.params.id] || []);
 });
 
-//Buscar uma observação por ID
-app.get("/lembretes/:id/observacoes", (req, res) => {
+app.put('/lembretes/:id/observacoes/:idObs', (req, res) => {
     const lembreteId = req.params.id;
-    const observacoesDoLembrete = observacoesPorId[lembreteId];
-    if (observacoesDoLembrete) {
-        res.send(observacoesDoLembrete);
-    } else {
-        res.status(404).send('Lembrete não encontrado ou não possui observações.');
-    }
-});
+    const observacaoId = req.params.idObs;
+    const { texto, concluido } = req.body;
 
-//Atualizar uma observação por ID
-app.put("/lembretes/:id/observacoes/:obsId", (req, res) => {
-    const lembreteId = req.params.id;
-    const observacaoId = req.params.obsId;
-    const observacoesDoLembrete = observacoesPorId[lembreteId];
+    const observacoesDoLembrete = observacoesPorLembreteId[lembreteId];
 
     if (observacoesDoLembrete) {
-        const observacao = observacoesDoLembrete.find((o) => o.id === observacaoId);
+        const observacaoIndex = observacoesDoLembrete.findIndex(obs => obs.id === observacaoId);
 
-        if (observacao) {
-            const { texto, concluido } = req.body;
-            observacao.texto = texto || observacao.texto;
-            observacao.concluido = concluido !== undefined ? concluido : observacao.concluido;
-            res.send(observacao);
+        if (observacaoIndex !== -1) {
+            observacoesDoLembrete[observacaoIndex] = { id: observacaoId, texto, concluido };
+            observacoesPorLembreteId[lembreteId] = observacoesDoLembrete;
+
+            res.status(200).send(observacoesDoLembrete[observacaoIndex]);
         } else {
             res.status(404).send('Observação não encontrada.');
         }
     } else {
-        res.status(404).send('Lembrete não encontrado ou não possui observações.');
+        res.status(404).send('Lembrete não encontrado.');
     }
 });
 
-// Excluir uma observação
-app.delete("/lembretes/:id/observacoes/:obsId", (req, res) => {
+app.delete('/lembretes/:id/observacoes/:idObs', (req, res) => {
     const lembreteId = req.params.id;
-    const observacaoId = req.params.obsId;
-    const observacoesDoLembrete = observacoesPorId[lembreteId];
+    const observacaoId = req.params.idObs;
+
+    const observacoesDoLembrete = observacoesPorLembreteId[lembreteId];
 
     if (observacoesDoLembrete) {
-        const observacaoIndex = observacoesDoLembrete.findIndex((o) => o.id === observacaoId);
+        const observacaoIndex = observacoesDoLembrete.findIndex(obs => obs.id === observacaoId);
 
         if (observacaoIndex !== -1) {
             observacoesDoLembrete.splice(observacaoIndex, 1);
-            res.send('Observação excluída com sucesso.');
+            observacoesPorLembreteId[lembreteId] = observacoesDoLembrete;
+
+            res.status(200).send("Observação deletada com sucesso");
         } else {
             res.status(404).send('Observação não encontrada.');
         }
     } else {
-        res.status(404).send('Lembrete não encontrado ou não possui observações.');
+        res.status(404).send('Lembrete não encontrado.');
     }
+});
+
+
+app.post("/eventos", (req, res) => {
+    console.log(req.body);
+    res.status(200).send({ msg: "ok" });
 });
 
 app.listen(5000, () => {
