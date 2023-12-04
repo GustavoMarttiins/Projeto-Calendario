@@ -3,11 +3,18 @@ const app = express();
 app.use(express.json());
 const lembretes = [];
 let contador = 0;
+const lembrete = require(".Backend\base\LembretesDB");
 
 // Listar todos os lembretes
 app.get('/lembretes', (req, res) => {
   res.send(lembretes);
 });
+
+app.post('/lembrete/', (req, res) => {
+  lembrete.create({
+    nome: req.body.nome,
+  })
+})
 
 // Criar um novo lembrete
 app.post('/lembretes', (req, res) => {
