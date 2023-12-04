@@ -1,4 +1,5 @@
-Projeto de Microserviços com Node.js, Sequelize e Barramento de Eventos
+# Projeto de Microserviços com Node.js, Sequelize e Barramento de Eventos
+
 Este projeto consiste em quatro microserviços em JavaScript, cada um desempenhando um papel específico: Lembretes, Observações, Eventos (barramento de eventos) e Base (conexão com o banco de dados).
 
 Instruções para Configuração e Execução
