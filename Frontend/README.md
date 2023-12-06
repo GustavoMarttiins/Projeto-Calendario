@@ -1,4 +1,4 @@
-#Projeto Frontend - Execução do Código com LiveServer: Passo a Passo
+# Projeto Frontend - Execução do Código com LiveServer: Passo a Passo
 
 Para garantir uma execução suave e eficiente do código, o ambiente de desenvolvimento utiliza o LiveServer, uma extensão do Visual Studio Code que facilita a visualização dinâmica de páginas da web em tempo real. Siga os passos abaixo para iniciar e visualizar o projeto:
 
