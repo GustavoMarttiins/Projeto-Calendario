@@ -1,20 +1,14 @@
 const express = require('express');
 const app = express();
 app.use(express.json());
+const axios = require('axios');
 const lembretes = [];
 let contador = 0;
-const lembrete = require(".Backend\base\LembretesDB");
 
 // Listar todos os lembretes
 app.get('/lembretes', (req, res) => {
   res.send(lembretes);
 });
-
-app.post('/lembrete/', (req, res) => {
-  lembrete.create({
-    nome: req.body.nome,
-  })
-})
 
 // Criar um novo lembrete
 app.post('/lembretes', (req, res) => {
@@ -27,6 +21,13 @@ app.post('/lembretes', (req, res) => {
     data: data.toISOString(),
     concluido: concluido !== undefined ? concluido : false
   };
+  await axios.post("http://localhost:10000/eventos", {
+        tipo: "LembreteCriado",
+        dados: {
+            contador,
+            nome,
+        },
+    });
   lembretes.push(novoLembrete);
   res.status(201).send(novoLembrete);
 });
